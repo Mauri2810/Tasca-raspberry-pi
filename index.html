@@ -2,22 +2,58 @@
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
-    <title>Estadístiques Sensor Pi</title>
+    <title>Monitorització de Temperatura</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f4f4f4; }
-        .container { width: 80%; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; text-align: center; }
+        .container { background: white; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 30px; max-width: 900px; margin: auto; }
+        h1 { color: #1a73e8; }
+        canvas { margin-top: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📊 Monitorització de Temperatura</h1>
         <p>Dades recollides de la Raspberry Pi (Tasca 6)</p>
-        <canvas id="tempChart"></canvas>
+        <canvas id="mevaGrafica"></canvas>
     </div>
+
     <script>
-        // Aquí conectaremos el CSV mañana para que se pinte la gráfica sola
-        console.log("Web preparada para mostrar estadísticas.");
+        async function carregarDades() {
+            // Agafem el fitxer CSV que generarà la Pi
+            const resposta = await fetch('dades_temperatura.csv');
+            const dadesRaw = await resposta.text();
+            
+            const files = dadesRaw.split('\n').slice(1); // Treiem la capçalera
+            const etiquetes = [];
+            const temperatures = [];
+
+            files.forEach(fila => {
+                const columnes = fila.split(',');
+                if (columnes.length >= 2) {
+                    etiquetes.push(columnes[0]); // Data i hora
+                    temperatures.push(parseFloat(columnes[1])); // Valor temp
+                }
+            });
+
+            const ctx = document.getElementById('mevaGrafica').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: etiquetes,
+                    datasets: [{
+                        label: 'Temperatura (ºC)',
+                        data: temperatures,
+                        borderColor: '#1a73e8',
+                        backgroundColor: 'rgba(26, 115, 232, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                }
+            });
+        }
+        carregarDades();
     </script>
 </body>
 </html>
