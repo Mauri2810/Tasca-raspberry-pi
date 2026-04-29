@@ -2,58 +2,94 @@
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
-    <title>Monitorització de Temperatura</title>
+    <title>Monitorització de Temperatura - Tasca 6</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; text-align: center; }
-        .container { background: white; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 30px; max-width: 900px; margin: auto; }
-        h1 { color: #1a73e8; }
-        canvas { margin-top: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h1 { color: #1a73e8; margin-bottom: 5px; }
+        .stats-container { display: flex; justify-content: space-around; margin: 20px 0; gap: 15px; }
+        .stat-box { background: #e8f0fe; padding: 15px; border-radius: 10px; flex: 1; border: 1px solid #1a73e8; }
+        .stat-box h3 { margin: 0 0 10px 0; font-size: 14px; color: #555; }
+        .stat-box p { margin: 0; font-size: 24px; font-weight: bold; color: #1a73e8; }
+        canvas { margin-top: 30px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📊 Monitorització de Temperatura</h1>
-        <p>Dades recollides de la Raspberry Pi (Tasca 6)</p>
-        <canvas id="mevaGrafica"></canvas>
+
+<div class="container">
+    <h1>📊 Panell de Temperatura</h1>
+    <p>Dades actualitzades des de la Raspberry Pi</p>
+
+    <div class="stats-container">
+        <div class="stat-box">
+            <h3>Mitjana Matí (08-13h)</h3>
+            <p id="avg-mati">-- °C</p>
+        </div>
+        <div class="stat-box">
+            <h3>Mitjana Tarda (14-19h)</h3>
+            <p id="avg-tarda">-- °C</p>
+        </div>
+        <div class="stat-box">
+            <h3>Mitjana Nit (20-23h)</h3>
+            <p id="avg-nit">-- °C</p>
+        </div>
     </div>
 
-    <script>
-        async function carregarDades() {
-            // Agafem el fitxer CSV que generarà la Pi
-            const resposta = await fetch('dades_temperatura.csv');
-            const dadesRaw = await resposta.text();
-            
-            const files = dadesRaw.split('\n').slice(1); // Treiem la capçalera
-            const etiquetes = [];
-            const temperatures = [];
+    <canvas id="tempChart"></canvas>
+</div>
 
-            files.forEach(fila => {
-                const columnes = fila.split(',');
-                if (columnes.length >= 2) {
-                    etiquetes.push(columnes[0]); // Data i hora
-                    temperatures.push(parseFloat(columnes[1])); // Valor temp
-                }
-            });
+<script>
+    async function processarDades() {
+        const resposta = await fetch('dades_temperatura.csv');
+        const text = await resposta.text();
+        const files = text.split('\n').slice(1);
 
-            const ctx = document.getElementById('mevaGrafica').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: etiquetes,
-                    datasets: [{
-                        label: 'Temperatura (ºC)',
-                        data: temperatures,
-                        borderColor: '#1a73e8',
-                        backgroundColor: 'rgba(26, 115, 232, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.3
-                    }]
-                }
-            });
-        }
-        carregarDades();
-    </script>
+        let labels = [], temps = [];
+        let sumaMati = 0, cMati = 0;
+        let sumaTarda = 0, cTarda = 0;
+        let sumaNit = 0, cNit = 0;
+
+        files.forEach(fila => {
+            const cols = fila.split(',');
+            if (cols.length >= 2) {
+                const dataHora = cols[0];
+                const temp = parseFloat(cols[1]);
+                const hora = parseInt(dataHora.split(' ')[1].split(':')[0]);
+
+                labels.push(dataHora);
+                temps.push(temp);
+
+                // Càlcul de mitjanes per franges
+                if (hora >= 8 && hora <= 13) { sumaMati += temp; cMati++; }
+                else if (hora >= 14 && hora <= 19) { sumaTarda += temp; cTarda++; }
+                else if (hora >= 20) { sumaNit += temp; cNit++; }
+            }
+        });
+
+        // Mostrar mitjanes a la web
+        document.getElementById('avg-mati').innerText = cMati > 0 ? (sumaMati/cMati).toFixed(2) + " °C" : "--";
+        document.getElementById('avg-tarda').innerText = cTarda > 0 ? (sumaTarda/cTarda).toFixed(2) + " °C" : "--";
+        document.getElementById('avg-nit').innerText = cNit > 0 ? (sumaNit/cNit).toFixed(2) + " °C" : "--";
+
+        // Crear Gràfica
+        new Chart(document.getElementById('tempChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Temperatura Real (ºC)',
+                    data: temps,
+                    borderColor: '#1a73e8',
+                    backgroundColor: 'rgba(26, 115, 232, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            }
+        });
+    }
+    processarDades();
+</script>
+
 </body>
 </html>
