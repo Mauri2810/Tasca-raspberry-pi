@@ -3,177 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PiTemp App - Monitorització</title>
+    <title>PiTemp App - Estadístiques</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --bg: #f8f9fa;
-            --card-bg: #ffffff;
-            --text: #2b2d42;
-        }
-
-        body { 
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
-            background-color: var(--bg); 
-            color: var(--text); 
-            margin: 0; padding: 0; 
-        }
-
-        header {
-            background: var(--primary);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-bottom-left-radius: 25px;
-            border-bottom-right-radius: 25px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        .app-container { max-width: 900px; margin: 20px auto; padding: 0 15px; }
-
-        h2 { font-size: 1.2rem; margin-bottom: 15px; color: var(--secondary); border-left: 4px solid var(--primary); padding-left: 10px; }
-
-        /* Estil de les targetes (Cards) */
-        .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        :root { --primary: #4361ee; --secondary: #3f37c9; --bg: #f8f9fa; --card-bg: #ffffff; }
+        body { font-family: sans-serif; background-color: var(--bg); margin: 0; padding: 0; text-align: center; }
+        header { background: var(--primary); color: white; padding: 20px; border-bottom-radius: 20px; }
+        .app-container { max-width: 800px; margin: auto; padding: 20px; }
         
-        .card { 
-            background: var(--card-bg); 
-            padding: 20px; 
-            border-radius: 20px; 
-            text-align: center; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
+        /* Estil Botons */
+        .button-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        button { 
+            background: var(--primary); color: white; border: none; padding: 12px 20px; 
+            border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s;
         }
-        .card:active { transform: scale(0.95); }
+        button:hover { background: var(--secondary); transform: translateY(-2px); }
+        button:active { transform: scale(0.98); }
 
-        .card h3 { font-size: 0.8rem; text-transform: uppercase; color: #8d99ae; margin: 0 0 10px 0; }
-        .card p { font-size: 1.6rem; font-weight: 800; margin: 0; color: var(--primary); }
-
-        .chart-container { 
-            background: var(--card-bg); 
-            padding: 20px; 
-            border-radius: 20px; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
+        /* Resultat Gran */
+        .result-card { 
+            background: white; padding: 30px; border-radius: 20px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 20px; 
         }
+        .result-card h2 { margin: 0; color: #8d99ae; font-size: 0.9rem; text-transform: uppercase; }
+        .result-card p { margin: 10px 0 0 0; font-size: 3rem; font-weight: 800; color: var(--primary); }
 
-        .footer-info { text-align: center; font-size: 0.8rem; color: #adb5bd; margin-top: 20px; padding-bottom: 30px; }
+        .chart-container { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
 <header>
-    <h1 style="margin:0; font-size: 1.5rem;">🌡️ PiTemp Monitor</h1>
-    <p style="margin:5px 0 0 0; opacity: 0.8; font-size: 0.9rem;">Tasca 6 - SMX2</p>
+    <h1>🌡️ PiTemp Control</h1>
 </header>
 
 <div class="app-container">
-    
-    <h2>Resum del Dia (Mitjanes)</h2>
-    <div class="grid-stats">
-        <div class="card">
-            <h3>☀️ Matí</h3>
-            <p id="avg-mati">--°</p>
-        </div>
-        <div class="card">
-            <h3>🌆 Tarda</h3>
-            <p id="avg-tarda">--°</p>
-        </div>
-        <div class="card">
-            <h3>🌙 Nit</h3>
-            <p id="avg-nit">--°</p>
-        </div>
+    <div class="result-card">
+        <h2 id="result-title">Mitjana Actual</h2>
+        <p id="result-value">--°C</p>
     </div>
 
-    <h2>Estadístiques Mensuals</h2>
-    <div class="grid-stats">
-        <div class="card" style="border-bottom: 4px solid #ef233c;">
-            <h3>Mitjana Mes</h3>
-            <p id="avg-mes">--°</p>
-        </div>
-        <div class="card" style="border-bottom: 4px solid #ffb703;">
-            <h3>Lectures Totals</h3>
-            <p id="total-lectures">0</p>
-        </div>
+    <div class="button-group">
+        <button onclick="calcularMitjana('diaria')">Mitjana Diària</button>
+        <button onclick="calcularMitjana('setmanal')">Mitjana Setmanal</button>
+        <button onclick="calcularMitjana('mensual')">Mitjana Mensual</button>
     </div>
 
-    <h2>Gràfica de Temperatura</h2>
     <div class="chart-container">
         <canvas id="appChart"></canvas>
-    </div>
-
-    <div class="footer-info">
-        Actualitzat automàticament des de GitHub Repository<br>
-        © 2026 Mauri - Raspberry Pi Project
     </div>
 </div>
 
 <script>
+    let dadesGlobals = [];
+
     async function fetchData() {
-        try {
-            const response = await fetch('dades_temperatura.csv');
-            const data = await response.text();
-            const rows = data.trim().split('\n').slice(1);
+        const response = await fetch('dades_temperatura.csv');
+        const data = await response.text();
+        const rows = data.trim().split('\n').slice(1);
+        
+        let labels = [], temps = [];
+        rows.forEach(row => {
+            const cols = row.split(',');
+            if (cols.length >= 2) {
+                const t = parseFloat(cols[1]);
+                dadesGlobals.push(t);
+                labels.push(cols[0].split(' ')[1].substring(0,5));
+                temps.push(t);
+            }
+        });
 
-            let labels = [], temps = [];
-            let sMati = 0, cMati = 0;
-            let sTarda = 0, cTarda = 0;
-            let sNit = 0, cNit = 0;
-            let sMes = 0;
-
-            rows.forEach(row => {
-                const cols = row.split(',');
-                if (cols.length >= 2) {
-                    const t = parseFloat(cols[1]);
-                    const h = parseInt(cols[0].split(' ')[1].split(':')[0]);
-                    
-                    labels.push(cols[0].split(' ')[1].substring(0,5)); // Només hora:min
-                    temps.push(t);
-                    sMes += t;
-
-                    // Lògica de franges
-                    if (h >= 8 && h <= 13) { sMati += t; cMati++; }
-                    else if (h >= 14 && h <= 19) { sTarda += t; cTarda++; }
-                    else if (h >= 20 || h <= 7) { sNit += t; cNit++; }
-                }
-            });
-
-            // Pintar dades a les "cards"
-            document.getElementById('avg-mati').innerText = cMati > 0 ? (sMati/cMati).toFixed(1) + "°C" : "--";
-            document.getElementById('avg-tarda').innerText = cTarda > 0 ? (sTarda/cTarda).toFixed(1) + "°C" : "--";
-            document.getElementById('avg-nit').innerText = cNit > 0 ? (sNit/cNit).toFixed(1) + "°C" : "--";
-            document.getElementById('avg-mes').innerText = rows.length > 0 ? (sMes/rows.length).toFixed(1) + "°C" : "--";
-            document.getElementById('total-lectures').innerText = rows.length;
-
-            // Configurar Gràfica estil App
-            const ctx = document.getElementById('appChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Temperatura (ºC)',
-                        data: temps,
-                        borderColor: '#4361ee',
-                        backgroundColor: 'rgba(67, 97, 238, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { grid: { display: false } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-        } catch (e) { console.error("Error carregant el CSV", e); }
+        // Pintar gràfica inicial
+        const ctx = document.getElementById('appChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{ label: 'Temp', data: temps, borderColor: '#4361ee', fill: true, tension: 0.4 }]
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
+        
+        // Per defecte mostrem la mensual
+        calcularMitjana('mensual');
     }
+
+    function calcularMitjana(tipus) {
+        let titol = "";
+        let valors = [];
+
+        if (tipus === 'diaria') {
+            titol = "Mitjana de les darreres 24h";
+            valors = dadesGlobals.slice(-24); // Últimes 24 lectures
+        } else if (tipus === 'setmanal') {
+            titol = "Mitjana darrers 7 dies";
+            valors = dadesGlobals.slice(-168); // Lectures d'una setmana (aprox)
+        } else {
+            titol = "Mitjana Mensual Total";
+            valors = dadesGlobals;
+        }
+
+        const suma = valors.reduce((a, b) => a + b, 0);
+        const mitjana = valors.length > 0 ? (suma / valors.length).toFixed(1) : "--";
+        
+        document.getElementById('result-title').innerText = titol;
+        document.getElementById('result-value').innerText = mitjana + "°C";
+    }
+
     fetchData();
 </script>
 
